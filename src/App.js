@@ -1,5 +1,5 @@
 import { all } from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import Accordion from "@mui/material/Accordion";
 import AccordionActions from "@mui/material/AccordionActions";
@@ -15,6 +15,9 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import { Box } from "@mui/material";
+
+const ZOHO = window.ZOHO;
 
 const fieldMap = {
   5: {
@@ -120,7 +123,23 @@ const fieldMap = {
 
 export default function ExcelToJson() {
   const [allFilesData, setAllFilesData] = useState({});
-  const [expanded, setExpanded] = useState(null);
+  const [expanded, setExpanded] = useState(0);
+
+  const [initialized, setInitialized] = useState(false);
+  const [entity, setEntity] = useState(null);
+  const [entityId, setEntityId] = useState(null);
+
+  useEffect(() => {
+    // initialize the app.
+    ZOHO.embeddedApp.on("PageLoad", function (data) {
+      setInitialized(true);
+      setEntity(data?.Entity);
+      setEntityId(data?.EntityId?.[0]);
+      ZOHO.CRM.UI.Resize({ height: "80%", width: "90%" });
+    });
+
+    ZOHO.embeddedApp.init();
+  }, []);
 
   const handleFileUpload = (e) => {
     const files = e.target.files;
@@ -240,165 +259,183 @@ export default function ExcelToJson() {
   console.log({ allFilesData });
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-2">Excel to JSON Converter</h2>
-      <input
-        type="file"
-        accept=".xlsx, .xls,.xlsm"
-        multiple
-        onChange={handleFileUpload}
-      />
+    <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "96%", mx: "auto", mb: 4 }}>
+        <div className="p-4">
+          <Typography
+            sx={{
+              textAlign: "center",
+              fontSize: "1.4rem",
+              fontWeight: "bold",
+              mb: 2,
+            }}
+          >
+            Excel to JSON Converter
+          </Typography>
 
-      {Object.keys(allFilesData).length > 0 && (
-        <div className="mt-4 space-y-4">
-          {Object.entries(allFilesData).map(([fileName, sheets], index) => (
-            <Accordion
-              onChange={() => {
-                console.log({ fileName, index });
-                setExpanded(index);
-              }}
-              sx={{
-                background: expanded === index ? "#e2e2e2" : "white",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                aria-controls="panel1-content"
-                id="panel1-header"
-              >
-                <Typography component="span">{fileName}</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                {/* {JSON.stringify(allFilesData[fileName])} */}
-                <TableContainer component={Paper}>
-                  <Table
-                    sx={{ minWidth: 650 }}
-                    size="small"
-                    aria-label="simple table"
-                  >
-                    <TableHead sx={{ background: "#b5b5b5" }}>
-                      <TableRow>
-                        {Object.keys(allFilesData[fileName].top).map(
-                          (tableCell) => (
-                            <TableCell>{tableCell}</TableCell>
-                          )
-                        )}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(allFilesData[fileName].top).map(
-                        (tableCell) => (
-                          <TableCell>
-                            {allFilesData[fileName].top[tableCell]}
-                          </TableCell>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <h4>Versicherungsnehmer</h4>
-                <TableContainer component={Paper}>
-                  <Table
-                    size="small"
-                    sx={{ minWidth: 650 }}
-                    aria-label="simple table"
-                  >
-                    <TableHead sx={{ background: "#b5b5b5" }}>
-                      <TableRow>
-                        {Object.keys(allFilesData[fileName].middle).map(
-                          (tableCell) => (
-                            <TableCell>{tableCell}</TableCell>
-                          )
-                        )}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(allFilesData[fileName].middle).map(
-                        (tableCell) => (
-                          <TableCell>
-                            {allFilesData[fileName].middle[tableCell]}
-                          </TableCell>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <h4>Table</h4>
-                <TableContainer component={Paper}>
-                  <Table
-                    size="small"
-                    sx={{ minWidth: 650 }}
-                    aria-label="simple table"
-                  >
-                    <TableHead sx={{ background: "#b5b5b5" }}>
-                      <TableRow>
-                        {Object.keys(allFilesData[fileName].table).map(
-                          (tableCell) => (
-                            <TableCell>{tableCell}</TableCell>
-                          )
-                        )}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(allFilesData[fileName].table).map(
-                        (tableCell) => (
-                          <TableCell>
-                            {(() => {
-                              const obj =
-                                allFilesData[fileName].table[tableCell];
-                              // return JSON.stringify(obj);
-                              return (
-                                <>
-                                  {Object.keys(obj).map((key) => {
-                                    return (
-                                      <div>
-                                        {key}
-                                        {obj[key]}
-                                      </div>
-                                    );
-                                  })}
-                                </>
-                              );
-                            })()}
-                          </TableCell>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <h4>Vertragsdaten</h4>
+          <input
+            type="file"
+            accept=".xlsx, .xls,.xlsm"
+            multiple
+            onChange={handleFileUpload}
+            style={{
+              marginBottom: "1rem",
+            }}
+          />
 
-                <TableContainer component={Paper}>
-                  <Table
-                    size="small"
-                    sx={{ minWidth: 650 }}
-                    aria-label="simple table"
+          {Object.keys(allFilesData).length > 0 && (
+            <div className="mt-4 space-y-4">
+              {Object.entries(allFilesData).map(([fileName, sheets], index) => (
+                <Accordion
+                  expanded={expanded == index ? true : false}
+                  onChange={() => {
+                    console.log({ fileName, index });
+                    setExpanded(index);
+                  }}
+                  sx={{
+                    background: expanded === index ? "#e2e2e2" : "white",
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls="panel1-content"
+                    id="panel1-header"
                   >
-                    <TableHead sx={{ background: "#b5b5b5" }}>
-                      <TableRow>
-                        {Object.keys(allFilesData[fileName].bottom).map(
-                          (tableCell) => (
-                            <TableCell>{tableCell}</TableCell>
-                          )
-                        )}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(allFilesData[fileName].bottom).map(
-                        (tableCell) => (
-                          <TableCell>
-                            {allFilesData[fileName].bottom[tableCell]}
-                          </TableCell>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </AccordionDetails>
-            </Accordion>
-          ))}
+                    <Typography component="span">{fileName}</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    {/* {JSON.stringify(allFilesData[fileName])} */}
+                    <TableContainer component={Paper}>
+                      <Table
+                        sx={{ minWidth: 650 }}
+                        size="small"
+                        aria-label="simple table"
+                      >
+                        <TableHead sx={{ background: "#b5b5b5" }}>
+                          <TableRow>
+                            {Object.keys(allFilesData[fileName].top).map(
+                              (tableCell) => (
+                                <TableCell>{tableCell}</TableCell>
+                              )
+                            )}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {Object.keys(allFilesData[fileName].top).map(
+                            (tableCell) => (
+                              <TableCell>
+                                {allFilesData[fileName].top[tableCell]}
+                              </TableCell>
+                            )
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                    <h4>Versicherungsnehmer</h4>
+                    <TableContainer component={Paper}>
+                      <Table
+                        size="small"
+                        sx={{ minWidth: 650 }}
+                        aria-label="simple table"
+                      >
+                        <TableHead sx={{ background: "#b5b5b5" }}>
+                          <TableRow>
+                            {Object.keys(allFilesData[fileName].middle).map(
+                              (tableCell) => (
+                                <TableCell>{tableCell}</TableCell>
+                              )
+                            )}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {Object.keys(allFilesData[fileName].middle).map(
+                            (tableCell) => (
+                              <TableCell>
+                                {allFilesData[fileName].middle[tableCell]}
+                              </TableCell>
+                            )
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                    <h4>Table</h4>
+                    <TableContainer component={Paper}>
+                      <Table
+                        size="small"
+                        sx={{ minWidth: 650 }}
+                        aria-label="simple table"
+                      >
+                        <TableHead sx={{ background: "#b5b5b5" }}>
+                          <TableRow>
+                            {Object.keys(allFilesData[fileName].table).map(
+                              (tableCell) => (
+                                <TableCell>{tableCell}</TableCell>
+                              )
+                            )}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {Object.keys(allFilesData[fileName].table).map(
+                            (tableCell) => (
+                              <TableCell>
+                                {(() => {
+                                  const obj =
+                                    allFilesData[fileName].table[tableCell];
+                                  // return JSON.stringify(obj);
+                                  return (
+                                    <>
+                                      {Object.keys(obj).map((key) => {
+                                        return (
+                                          <div>
+                                            {key}
+                                            {obj[key]}
+                                          </div>
+                                        );
+                                      })}
+                                    </>
+                                  );
+                                })()}
+                              </TableCell>
+                            )
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                    <h4>Vertragsdaten</h4>
+
+                    <TableContainer component={Paper}>
+                      <Table
+                        size="small"
+                        sx={{ minWidth: 650 }}
+                        aria-label="simple table"
+                      >
+                        <TableHead sx={{ background: "#b5b5b5" }}>
+                          <TableRow>
+                            {Object.keys(allFilesData[fileName].bottom).map(
+                              (tableCell) => (
+                                <TableCell>{tableCell}</TableCell>
+                              )
+                            )}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {Object.keys(allFilesData[fileName].bottom).map(
+                            (tableCell) => (
+                              <TableCell>
+                                {allFilesData[fileName].bottom[tableCell]}
+                              </TableCell>
+                            )
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </Box>
+    </Box>
   );
 }
