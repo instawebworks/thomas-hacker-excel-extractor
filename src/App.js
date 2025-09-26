@@ -18,6 +18,7 @@ import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import { Email } from "@mui/icons-material";
+
 const ZOHO = window.ZOHO;
 const fieldMap = {
   5: {
@@ -363,10 +364,9 @@ export default function ExcelToJson() {
         sort_order: "asc",
         per_page: 200,
         page: 1,
-      }).then(function (data) {
-        setDeals(data.data);
-        console.log("Record Data", data);
       });
+      console.log("deals fields", dealFields.data);
+      setDeals(dealFields.data);
 
       setInitialLoading(false);
       ZOHO.CRM.UI.Resize({ height: "1200", width: "1500" }).then(function (
@@ -477,14 +477,7 @@ export default function ExcelToJson() {
               }
               if (index >= 20 && index <= 26) {
                 const map = fieldMap[index];
-                // console.log(
-                //   "row",
-                //   row,
-                //   "row length" + " " + row.length,
-                //   index,
-                //   map
-                // );
-                // // tableRows.push({ row, map });
+
                 row.forEach((itm, itmIndex) => {
                   if (map?.hasOwnProperty(itmIndex)) {
                     console.log("Table", index, map);
@@ -555,92 +548,18 @@ export default function ExcelToJson() {
                 aria-controls="panel1-content"
                 id="panel1-header"
               >
-                <Typography component="span">{fileName}</Typography>
-                <Autocomplete
-                  disablePortal
-                  id="combo-box-demo"
-                  onOpen={() => {
-                    const data = {};
-                    deals.forEach((option) => {
-                      data[option.id] = option;
-                    });
-
-                    setDeals(Object.values(data));
-                  }}
-                  options={deals}
-                  getOptionLabel={(option) => option?.Full_Name}
-                  getOptionKey={(option) => option.id}
-                  sx={{
-                    flex: 2,
-                  }}
-                  size={"small"}
-                  value={
-                    selectedDeals[fileName]
-                      ? {
-                          Full_Name: selectedDeals?.[fileName]?.name || "",
-                          id: selectedDeals?.[fileName]?.id || "",
-                        }
-                      : null
-                  }
-                  onChange={(event, value) => {
-                    console.log({ value, id: value?.id });
-                    setSelectedDeals((prev) => ({
-                      ...prev,
-                      [fileName]: { name: value?.Full_Name, id: value?.id },
-                    }));
-                    // setValue(
-                    //   {
-                    //     name: value?.Full_Name,
-                    //     id: value?.id,
-                    //   } || ""
-                    // );
-                  }}
-                  loading={loading}
-                  loadingText={"Loading..."}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Select Contact Name"
-                      onChange={async (e) => {
-                        if (e?.target?.value?.length >= 3) {
-                          setSearchValue((prev) => e?.target?.value);
-                        }
-                      }}
-                      // error={!!error}
-                      // helperText={error && error.message}
-                    />
-                  )}
-                />
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) => {
-                    console.log(e.target.files);
-                    setSelectedFiles((prev) => ({
-                      ...prev,
-                      [fileName]: e.target.files,
-                    }));
-                    // const name = e.target.files[0].name;
-
-                    // ZOHO.CRM.API.attachFile({
-                    //   Entity: "Deals",
-                    //   RecordID: "4731441000014144866",
-                    //   File: {
-                    //     Name: name,
-                    //     Content: e.target.files[0],
-                    //   },
-                    // }).then(function (data) {
-                    //   console.log(data);
-                    // });
-                  }}
-                />
-
-                <button
-                  onClick={async () => {
-                    const files = selectedFiles[fileName];
+                <form
+                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const files = selectedFiles[fileName] || [];
                     const deal = selectedDeals[fileName];
                     const fileData = allFilesData[fileName];
                     const filesArray = Array.from(files);
+
+                    console.log({ files, deal, fileData, filesArray });
+
                     // collect promises
                     const uploadPromises = filesArray.map((file, index) => {
                       return ZOHO.CRM.API.attachFile({
@@ -659,7 +578,7 @@ export default function ExcelToJson() {
                     // wait for all to finish
                     const results = await Promise.all(uploadPromises);
 
-                    console.log("All uploads done ✅", results);
+                    console.log("All uploads done", results);
 
                     // take decision after everything is uploaded
                     if (results.every((r) => r.data[0].code === "SUCCESS")) {
@@ -696,8 +615,113 @@ export default function ExcelToJson() {
                     }
                   }}
                 >
-                  Proceed
-                </button>
+                  <Typography component="span" sx={{ width: "200px" }}>
+                    {fileName}
+                  </Typography>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      flex: 1,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "450px",
+                      }}
+                    >
+                      <Autocomplete
+                        disablePortal
+                        id="combo-box-demo"
+                        onOpen={() => {
+                          const data = {};
+                          deals.forEach((option) => {
+                            data[option.id] = option;
+                          });
+
+                          setDeals(Object.values(data));
+                        }}
+                        options={deals}
+                        getOptionLabel={(option) => option?.Full_Name}
+                        getOptionKey={(option) => option.id}
+                        sx={{
+                          width: "100%",
+                        }}
+                        size={"small"}
+                        value={
+                          selectedDeals[fileName]
+                            ? {
+                                Full_Name:
+                                  selectedDeals?.[fileName]?.name || "",
+                                id: selectedDeals?.[fileName]?.id || "",
+                              }
+                            : null
+                        }
+                        onChange={(event, value) => {
+                          console.log({ value, id: value?.id });
+                          setSelectedDeals((prev) => ({
+                            ...prev,
+                            [fileName]: {
+                              name: value?.Full_Name,
+                              id: value?.id,
+                            },
+                          }));
+                          // setValue(
+                          //   {
+                          //     name: value?.Full_Name,
+                          //     id: value?.id,
+                          //   } || ""
+                          // );
+                        }}
+                        loading={loading}
+                        loadingText={"Loading..."}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            required
+                            sx={{ width: "100%" }}
+                            placeholder="Select Contact Name"
+                            onChange={async (e) => {
+                              if (e?.target?.value?.length >= 3) {
+                                setSearchValue((prev) => e?.target?.value);
+                              }
+                            }}
+                            // error={!!error}
+                            // helperText={error && error.message}
+                          />
+                        )}
+                      />
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(e) => {
+                        console.log(e.target.files);
+                        setSelectedFiles((prev) => ({
+                          ...prev,
+                          [fileName]: e.target.files,
+                        }));
+                        // const name = e.target.files[0].name;
+
+                        // ZOHO.CRM.API.attachFile({
+                        //   Entity: "Deals",
+                        //   RecordID: "4731441000014144866",
+                        //   File: {
+                        //     Name: name,
+                        //     Content: e.target.files[0],
+                        //   },
+                        // }).then(function (data) {
+                        //   console.log(data);
+                        // });
+                      }}
+                    />
+
+                    <Button type="submit" variant="contained" size="small">
+                      Proceed
+                    </Button>
+                  </div>
+                </form>
               </AccordionSummary>
               <AccordionDetails>
                 {/* {JSON.stringify(allFilesData[fileName])} */}
