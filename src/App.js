@@ -1,5 +1,5 @@
 import { all } from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import Accordion from "@mui/material/Accordion";
 import AccordionActions from "@mui/material/AccordionActions";
@@ -15,7 +15,10 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-
+import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
+import { Email } from "@mui/icons-material";
+const ZOHO = window.ZOHO;
 const fieldMap = {
   5: {
     1: 3,
@@ -117,10 +120,297 @@ const fieldMap = {
     1: 2,
   },
 };
+const per_page = 200;
+const useDebouncedValue = (inputValue, delay) => {
+  const [loading, setLoading] = useState(false);
+  const [debouncedValue, setDebouncedValue] = useState(inputValue);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(inputValue);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [inputValue, delay]);
+
+  return debouncedValue;
+};
 
 export default function ExcelToJson() {
   const [allFilesData, setAllFilesData] = useState({});
   const [expanded, setExpanded] = useState(null);
+  const [searchValue, setSearchValue] = useState(null);
+  //Autocomplete
+  const [loading, setLoading] = useState(false);
+  const [deals, setDeals] = useState([]);
+  const [previousSearch, setPreviousSearch] = useState([]);
+  const [initailLoading, setInitialLoading] = useState(true);
+  const [zohoInitialized, setZohoInitialized] = useState(false);
+  const [optionsForRole, setOptionsForRole] = useState(null);
+  const [entityInfo, setEntityInfo] = useState(null);
+  const [options, setOptions] = useState([]);
+  const [value, setValue] = useState(null);
+  const [selectedDeals, setSelectedDeals] = useState({});
+  const [selectedFiles, setSelectedFiles] = useState([]);
+
+  const debouncedSearchTerm = useDebouncedValue(searchValue, 500);
+
+  const handlePreviousSearch = ({ search }) => {
+    let temp = Object.keys(previousSearch)?.filter((pet) => {
+      var regexObj = new RegExp("^" + pet, "i");
+      if (regexObj.test(search)) return true;
+    });
+
+    let result = "";
+    if (temp.length != 0) {
+      result = temp?.reduce(function (a, b) {
+        return a.length > b.length ? a : b;
+      });
+    }
+
+    return result;
+  };
+  const handleSearch = async ({ search, page, previousData = [] }) => {
+    console.log(
+      "handle previous search",
+      search,
+      !!handlePreviousSearch({ search: search }),
+      previousData
+    );
+    try {
+      if (handlePreviousSearch({ search: search }) == "") {
+        setLoading((prev) => true);
+        try {
+          let accountResp = await ZOHO.CRM.API.searchRecord({
+            Entity: "Contacts",
+            Type: "criteria",
+            Query:
+              "(Full_Name:starts_with:" + encodeURI("*" + search + "*") + ")",
+            // Query: "(Email:Contains:" + Number(search) + ")",
+            per_page: per_page,
+            page: page,
+            sort_order: "asc",
+          });
+          console.log({ accountResp: accountResp });
+
+          if (!accountResp?.data) {
+            setLoading((prev) => false);
+            if (Number(search)) {
+              return;
+            } else {
+              setPreviousSearch((prev) => {
+                return {
+                  ...prev,
+                  [`${search}`]: {
+                    data: [...previousData],
+                    page: page,
+                    more_records: false,
+                  },
+                };
+              });
+              setDeals((prev) => [...previousData]);
+              return;
+            }
+          }
+          if (accountResp?.info?.more_records && page < 1) {
+            // Call again
+            return handleSearch({
+              search: search,
+              page: page + 1,
+              previousData: [...previousData, ...accountResp?.data],
+            });
+          } else {
+            setPreviousSearch((prev) => {
+              return {
+                ...prev,
+                [`${search}`]: {
+                  data: [...previousData, ...accountResp?.data],
+                  page: page,
+                  more_records: accountResp?.info?.more_records,
+                },
+              };
+            });
+          }
+
+          setLoading((prev) => false);
+          setDeals((prev) => [...previousData, ...accountResp?.data]);
+
+          return;
+        } catch (error) {
+          setLoading((prev) => false);
+          if (Number(search)) {
+            return;
+          } else {
+            setPreviousSearch((prev) => {
+              return {
+                ...prev,
+                [`${search}`]: {
+                  data: [...previousData],
+                  page: page,
+                  more_records: false,
+                },
+              };
+            });
+            setDeals((prev) => [...previousData]);
+
+            return;
+          }
+        }
+      } else if (handlePreviousSearch({ search: search }) == search) {
+        //we dont need to do anything here
+      } else {
+        try {
+          let previousResult =
+            previousSearch[`${handlePreviousSearch({ search: search })}`];
+          if (previousResult?.more_records) {
+            setLoading((prev) => true);
+            const accountResp = await ZOHO.CRM.API.searchRecord({
+              Entity: "Contacts",
+              Type: "criteria",
+              Query:
+                "(Full_Name:starts_with:" + encodeURI("*" + search + "*") + ")",
+              per_page: per_page,
+              sort_order: "asc",
+              page: page,
+            });
+            console.log({ accountResp: accountResp });
+            if (!accountResp?.data) {
+              setLoading((prev) => false);
+              if (Number(search)) {
+                return;
+              } else {
+                setPreviousSearch((prev) => {
+                  return {
+                    ...prev,
+                    [`${search}`]: {
+                      data: [...previousData],
+                      page: page,
+                      more_records: false,
+                    },
+                  };
+                });
+                setDeals((prev) => [...previousData]);
+
+                return;
+              }
+            }
+            if (accountResp?.info?.more_records && page < 1) {
+              console.log({
+                search: search,
+                page: page + 1,
+                previousData: [...previousData, ...accountResp?.data],
+              });
+              // Call again
+              return handleSearch({
+                search: search,
+                page: page + 1,
+                previousData: [...previousData, ...accountResp?.data],
+              });
+            } else {
+              setPreviousSearch((prev) => {
+                return {
+                  ...prev,
+                  [`${search}`]: {
+                    data: [...previousData, ...accountResp?.data],
+                    page: page,
+                    more_records: accountResp?.info?.more_records,
+                  },
+                };
+              });
+            }
+
+            setLoading((prev) => false);
+            setDeals((prev) => [...previousData, ...accountResp?.data]);
+
+            return;
+          }
+        } catch (error) {
+          setLoading((prev) => false);
+          if (Number(search)) {
+            return;
+          } else {
+            setPreviousSearch((prev) => {
+              return {
+                ...prev,
+                [`${search}`]: {
+                  data: [...previousData],
+                  page: page,
+                  more_records: false,
+                },
+              };
+            });
+            setDeals((prev) => [...previousData]);
+
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      setLoading((prev) => false);
+      console.log({ error });
+    }
+  };
+
+  useEffect(() => {
+    ZOHO.embeddedApp.on("PageLoad", async function (entityData) {
+      console.log("PageLoad", entityData);
+      setEntityInfo(entityData);
+
+      const dealFields = await ZOHO.CRM.API.getAllRecords({
+        Entity: "Contacts",
+        sort_order: "asc",
+        per_page: 200,
+        page: 1,
+      }).then(function (data) {
+        setDeals(data.data);
+        console.log("Record Data", data);
+      });
+
+      setInitialLoading(false);
+      ZOHO.CRM.UI.Resize({ height: "1200", width: "1500" }).then(function (
+        data
+      ) {
+        // console.log(data);
+      });
+    });
+
+    ZOHO.embeddedApp.init().then(() => {
+      setZohoInitialized(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    // searchValue?.length >= 3 &&
+    handleSearch({
+      search: debouncedSearchTerm,
+      page: 1,
+      previousData: deals,
+    });
+  }, [debouncedSearchTerm]);
+  // useEffect(() => {
+  //   const data = {};
+
+  //   deals.forEach((option) => {
+  //     if (searchValue) {
+  //       const isFound = watch("test").find(
+  //         (row, rowIndex) =>
+  //           row?.PCL_Contact_section?.id !== option?.id &&
+  //           (option.Email?.toLowerCase().includes(searchValue?.toLowerCase()) ||
+  //             option.Full_Name?.toLowerCase().includes(
+  //               searchValue.toLowerCase()
+  //             ))
+  //       );
+
+  //       if (isFound) data[option.id] = option;
+  //     } else {
+  //       data[option.id] = option;
+  //     }
+  //   });
+
+  //   setOptions(Object.values(data));
+  // }, [deals]);
 
   const handleFileUpload = (e) => {
     const files = e.target.files;
@@ -237,7 +527,6 @@ export default function ExcelToJson() {
       reader.readAsArrayBuffer(file);
     });
   };
-  console.log({ allFilesData });
 
   return (
     <div className="p-4">
@@ -267,6 +556,148 @@ export default function ExcelToJson() {
                 id="panel1-header"
               >
                 <Typography component="span">{fileName}</Typography>
+                <Autocomplete
+                  disablePortal
+                  id="combo-box-demo"
+                  onOpen={() => {
+                    const data = {};
+                    deals.forEach((option) => {
+                      data[option.id] = option;
+                    });
+
+                    setDeals(Object.values(data));
+                  }}
+                  options={deals}
+                  getOptionLabel={(option) => option?.Full_Name}
+                  getOptionKey={(option) => option.id}
+                  sx={{
+                    flex: 2,
+                  }}
+                  size={"small"}
+                  value={
+                    selectedDeals[fileName]
+                      ? {
+                          Full_Name: selectedDeals?.[fileName]?.name || "",
+                          id: selectedDeals?.[fileName]?.id || "",
+                        }
+                      : null
+                  }
+                  onChange={(event, value) => {
+                    console.log({ value, id: value?.id });
+                    setSelectedDeals((prev) => ({
+                      ...prev,
+                      [fileName]: { name: value?.Full_Name, id: value?.id },
+                    }));
+                    // setValue(
+                    //   {
+                    //     name: value?.Full_Name,
+                    //     id: value?.id,
+                    //   } || ""
+                    // );
+                  }}
+                  loading={loading}
+                  loadingText={"Loading..."}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Select Contact Name"
+                      onChange={async (e) => {
+                        if (e?.target?.value?.length >= 3) {
+                          setSearchValue((prev) => e?.target?.value);
+                        }
+                      }}
+                      // error={!!error}
+                      // helperText={error && error.message}
+                    />
+                  )}
+                />
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => {
+                    console.log(e.target.files);
+                    setSelectedFiles((prev) => ({
+                      ...prev,
+                      [fileName]: e.target.files,
+                    }));
+                    // const name = e.target.files[0].name;
+
+                    // ZOHO.CRM.API.attachFile({
+                    //   Entity: "Deals",
+                    //   RecordID: "4731441000014144866",
+                    //   File: {
+                    //     Name: name,
+                    //     Content: e.target.files[0],
+                    //   },
+                    // }).then(function (data) {
+                    //   console.log(data);
+                    // });
+                  }}
+                />
+
+                <button
+                  onClick={async () => {
+                    const files = selectedFiles[fileName];
+                    const deal = selectedDeals[fileName];
+                    const fileData = allFilesData[fileName];
+                    const filesArray = Array.from(files);
+                    // collect promises
+                    const uploadPromises = filesArray.map((file, index) => {
+                      return ZOHO.CRM.API.attachFile({
+                        Entity: "Contacts",
+                        RecordID: deal.id,
+                        File: {
+                          Name: file.name,
+                          Content: file,
+                        },
+                      }).then((res) => {
+                        console.log("Uploaded:", res);
+                        return res; // keep the result
+                      });
+                    });
+
+                    // wait for all to finish
+                    const results = await Promise.all(uploadPromises);
+
+                    console.log("All uploads done ✅", results);
+
+                    // take decision after everything is uploaded
+                    if (results.every((r) => r.data[0].code === "SUCCESS")) {
+                      console.log("All files uploaded successfully!");
+                      const updatedFileNames = Object.keys(allFilesData).filter(
+                        (name) => name !== fileName
+                      );
+                      setSelectedDeals((prev) => {
+                        const updatedData = {};
+                        updatedFileNames.forEach((name) => {
+                          updatedData[name] = selectedDeals[name];
+                        });
+                        return updatedData;
+                      });
+                      setSelectedFiles((prev) => {
+                        const updatedData = {};
+                        updatedFileNames.forEach((name) => {
+                          updatedData[name] = selectedFiles[name];
+                        });
+                        return updatedData;
+                      });
+
+                      setAllFilesData((prev) => {
+                        const updatedData = {};
+                        updatedFileNames.forEach((name) => {
+                          updatedData[name] = allFilesData[name];
+                        });
+                        return updatedData;
+                      });
+
+                      // your next decision here
+                    } else {
+                      console.log("Some uploads failed", results);
+                    }
+                  }}
+                >
+                  Proceed
+                </button>
               </AccordionSummary>
               <AccordionDetails>
                 {/* {JSON.stringify(allFilesData[fileName])} */}
