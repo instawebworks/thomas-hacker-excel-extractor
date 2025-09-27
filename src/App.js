@@ -579,11 +579,18 @@ export default function ExcelToJson() {
                   aria-controls="panel1-content"
                   id="panel1-header"
                 >
+                  <Typography component="span" sx={{ width: "200px" }}>
+                    {fileName}
+                  </Typography>
+                </AccordionSummary>
+
+                <AccordionDetails>
                   <form
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: "10px",
+                      marginBottom: "20px",
                     }}
                     onSubmit={async (e) => {
                       e.preventDefault();
@@ -669,9 +676,6 @@ export default function ExcelToJson() {
                       }
                     }}
                   >
-                    <Typography component="span" sx={{ width: "200px" }}>
-                      {fileName}
-                    </Typography>
                     <div
                       style={{
                         display: "flex",
@@ -777,9 +781,6 @@ export default function ExcelToJson() {
                       </Button>
                     </div>
                   </form>
-                </AccordionSummary>
-                <AccordionDetails>
-                  {/* {JSON.stringify(allFilesData[fileName])} */}
                   <TableContainer component={Paper}>
                     <Table
                       sx={{ minWidth: 650 }}
