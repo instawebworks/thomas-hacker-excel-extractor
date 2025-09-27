@@ -265,12 +265,17 @@ export default function ExcelToJson() {
           <Typography
             sx={{
               textAlign: "center",
-              fontSize: "1.4rem",
+              fontSize: "1.5rem",
               fontWeight: "bold",
               mb: 2,
+              mt: 3,
             }}
           >
             Excel to JSON Converter
+          </Typography>
+
+          <Typography sx={{ fontWeight: "bold", mb: 1 }}>
+            Choose Excel Files to Process
           </Typography>
 
           <input
