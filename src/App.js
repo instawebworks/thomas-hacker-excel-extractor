@@ -18,8 +18,10 @@ import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import { Email } from "@mui/icons-material";
+import { Box } from "@mui/material";
 
 const ZOHO = window.ZOHO;
+
 const fieldMap = {
   5: {
     1: 3,
@@ -121,7 +123,9 @@ const fieldMap = {
     1: 2,
   },
 };
+
 const per_page = 200;
+
 const useDebouncedValue = (inputValue, delay) => {
   const [loading, setLoading] = useState(false);
   const [debouncedValue, setDebouncedValue] = useState(inputValue);
@@ -173,6 +177,7 @@ export default function ExcelToJson() {
 
     return result;
   };
+
   const handleSearch = async ({ search, page, previousData = [] }) => {
     console.log(
       "handle previous search",
@@ -184,19 +189,19 @@ export default function ExcelToJson() {
       if (handlePreviousSearch({ search: search }) == "") {
         setLoading((prev) => true);
         try {
-          let accountResp = await ZOHO.CRM.API.searchRecord({
-            Entity: "Contacts",
+          let dealsResp = await ZOHO.CRM.API.searchRecord({
+            Entity: "Deals",
             Type: "criteria",
             Query:
-              "(Full_Name:starts_with:" + encodeURI("*" + search + "*") + ")",
+              "(Deal_Name:starts_with:" + encodeURI("*" + search + "*") + ")",
             // Query: "(Email:Contains:" + Number(search) + ")",
             per_page: per_page,
             page: page,
             sort_order: "asc",
           });
-          console.log({ accountResp: accountResp });
+          console.log({ dealsResp: dealsResp });
 
-          if (!accountResp?.data) {
+          if (!dealsResp?.data) {
             setLoading((prev) => false);
             if (Number(search)) {
               return;
@@ -215,28 +220,28 @@ export default function ExcelToJson() {
               return;
             }
           }
-          if (accountResp?.info?.more_records && page < 1) {
+          if (dealsResp?.info?.more_records && page < 1) {
             // Call again
             return handleSearch({
               search: search,
               page: page + 1,
-              previousData: [...previousData, ...accountResp?.data],
+              previousData: [...previousData, ...dealsResp?.data],
             });
           } else {
             setPreviousSearch((prev) => {
               return {
                 ...prev,
                 [`${search}`]: {
-                  data: [...previousData, ...accountResp?.data],
+                  data: [...previousData, ...dealsResp?.data],
                   page: page,
-                  more_records: accountResp?.info?.more_records,
+                  more_records: dealsResp?.info?.more_records,
                 },
               };
             });
           }
 
           setLoading((prev) => false);
-          setDeals((prev) => [...previousData, ...accountResp?.data]);
+          setDeals((prev) => [...previousData, ...dealsResp?.data]);
 
           return;
         } catch (error) {
@@ -267,17 +272,17 @@ export default function ExcelToJson() {
             previousSearch[`${handlePreviousSearch({ search: search })}`];
           if (previousResult?.more_records) {
             setLoading((prev) => true);
-            const accountResp = await ZOHO.CRM.API.searchRecord({
-              Entity: "Contacts",
+            const dealsResp = await ZOHO.CRM.API.searchRecord({
+              Entity: "Deals",
               Type: "criteria",
               Query:
-                "(Full_Name:starts_with:" + encodeURI("*" + search + "*") + ")",
+                "(Deal_Name:starts_with:" + encodeURI("*" + search + "*") + ")",
               per_page: per_page,
               sort_order: "asc",
               page: page,
             });
-            console.log({ accountResp: accountResp });
-            if (!accountResp?.data) {
+            console.log({ dealsResp: dealsResp });
+            if (!dealsResp?.data) {
               setLoading((prev) => false);
               if (Number(search)) {
                 return;
@@ -297,33 +302,33 @@ export default function ExcelToJson() {
                 return;
               }
             }
-            if (accountResp?.info?.more_records && page < 1) {
+            if (dealsResp?.info?.more_records && page < 1) {
               console.log({
                 search: search,
                 page: page + 1,
-                previousData: [...previousData, ...accountResp?.data],
+                previousData: [...previousData, ...dealsResp?.data],
               });
               // Call again
               return handleSearch({
                 search: search,
                 page: page + 1,
-                previousData: [...previousData, ...accountResp?.data],
+                previousData: [...previousData, ...dealsResp?.data],
               });
             } else {
               setPreviousSearch((prev) => {
                 return {
                   ...prev,
                   [`${search}`]: {
-                    data: [...previousData, ...accountResp?.data],
+                    data: [...previousData, ...dealsResp?.data],
                     page: page,
-                    more_records: accountResp?.info?.more_records,
+                    more_records: dealsResp?.info?.more_records,
                   },
                 };
               });
             }
 
             setLoading((prev) => false);
-            setDeals((prev) => [...previousData, ...accountResp?.data]);
+            setDeals((prev) => [...previousData, ...dealsResp?.data]);
 
             return;
           }
@@ -360,7 +365,7 @@ export default function ExcelToJson() {
       setEntityInfo(entityData);
 
       const dealFields = await ZOHO.CRM.API.getAllRecords({
-        Entity: "Contacts",
+        Entity: "Deals",
         sort_order: "asc",
         per_page: 200,
         page: 1,
@@ -389,6 +394,7 @@ export default function ExcelToJson() {
       previousData: deals,
     });
   }, [debouncedSearchTerm]);
+
   // useEffect(() => {
   //   const data = {};
 
@@ -440,11 +446,11 @@ export default function ExcelToJson() {
           console.log({ json });
           // Keep sheet even if it’s empty
           if (sheetName === "Auftrag") {
-            // fileResult[sheetName] = json.map((row, index) => ({
-            //   rowNumber: index,
-            //   values: row,
-            // }));
-            // console.log({ fileResult });
+            fileResult[sheetName] = json.map((row, index) => ({
+              rowNumber: index,
+              values: row,
+            }));
+
             const value = {
               top: {},
               middle: {},
@@ -504,6 +510,9 @@ export default function ExcelToJson() {
                   }
                 });
               }
+              if (index === 38) {
+                value.bottom["Termin_Info"] = row[1];
+              }
             });
 
             fileResult = value;
@@ -512,6 +521,7 @@ export default function ExcelToJson() {
         });
 
         results[file.name] = fileResult;
+        console.log("file", results[file.name]);
 
         if (Object.keys(results).length === files.length) {
           setAllFilesData(results);
@@ -522,338 +532,384 @@ export default function ExcelToJson() {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-2">Excel to JSON Converter</h2>
-      <input
-        type="file"
-        accept=".xlsx, .xls,.xlsm"
-        multiple
-        onChange={handleFileUpload}
-      />
+    <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "96%", mx: "auto" }}>
+        <Typography
+          sx={{
+            fontSize: "1.5rem",
+            fontWeight: "bold",
+            textAlign: "center",
+            mt: 3,
+            mb: 2,
+          }}
+        >
+          Excel to Update Deals
+        </Typography>
 
-      {Object.keys(allFilesData).length > 0 && (
-        <div className="mt-4 space-y-4">
-          {Object.entries(allFilesData).map(([fileName, sheets], index) => (
-            <Accordion
-              onChange={() => {
-                console.log({ fileName, index });
-                setExpanded(index);
-              }}
-              sx={{
-                background: expanded === index ? "#e2e2e2" : "white",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                aria-controls="panel1-content"
-                id="panel1-header"
+        <Typography
+          sx={{
+            fontWeight: "bold",
+            mb: 1,
+          }}
+        >
+          Upload Excel Files
+        </Typography>
+
+        <input
+          type="file"
+          accept=".xlsx, .xls,.xlsm"
+          multiple
+          onChange={handleFileUpload}
+        />
+
+        {Object.keys(allFilesData).length > 0 && (
+          <div className="mt-4 space-y-4">
+            {Object.entries(allFilesData).map(([fileName, sheets], index) => (
+              <Accordion
+                onChange={() => {
+                  console.log({ fileName, index });
+                  setExpanded(index);
+                }}
+                sx={{
+                  background: expanded === index ? "#e2e2e2" : "white",
+                }}
               >
-                <form
-                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const files = selectedFiles[fileName] || [];
-                    const deal = selectedDeals[fileName];
-                    const fileData = allFilesData[fileName];
-                    const filesArray = Array.from(files);
-
-                    console.log({ files, deal, fileData, filesArray });
-
-                    // collect promises
-                    const uploadPromises = filesArray.map((file, index) => {
-                      return ZOHO.CRM.API.attachFile({
-                        Entity: "Contacts",
-                        RecordID: deal.id,
-                        File: {
-                          Name: file.name,
-                          Content: file,
-                        },
-                      }).then((res) => {
-                        console.log("Uploaded:", res);
-                        return res; // keep the result
-                      });
-                    });
-
-                    // wait for all to finish
-                    const results = await Promise.all(uploadPromises);
-
-                    console.log("All uploads done", results);
-
-                    // take decision after everything is uploaded
-                    if (results.every((r) => r.data[0].code === "SUCCESS")) {
-                      console.log("All files uploaded successfully!");
-                      const updatedFileNames = Object.keys(allFilesData).filter(
-                        (name) => name !== fileName
-                      );
-                      setSelectedDeals((prev) => {
-                        const updatedData = {};
-                        updatedFileNames.forEach((name) => {
-                          updatedData[name] = selectedDeals[name];
-                        });
-                        return updatedData;
-                      });
-                      setSelectedFiles((prev) => {
-                        const updatedData = {};
-                        updatedFileNames.forEach((name) => {
-                          updatedData[name] = selectedFiles[name];
-                        });
-                        return updatedData;
-                      });
-
-                      setAllFilesData((prev) => {
-                        const updatedData = {};
-                        updatedFileNames.forEach((name) => {
-                          updatedData[name] = allFilesData[name];
-                        });
-                        return updatedData;
-                      });
-
-                      // your next decision here
-                    } else {
-                      console.log("Some uploads failed", results);
-                    }
-                  }}
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  aria-controls="panel1-content"
+                  id="panel1-header"
                 >
-                  <Typography component="span" sx={{ width: "200px" }}>
-                    {fileName}
-                  </Typography>
-                  <div
+                  <form
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: "10px",
-                      flex: 1,
+                    }}
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const files = selectedFiles[fileName] || [];
+                      const deal = selectedDeals[fileName];
+                      const fileData = allFilesData[fileName];
+                      const filesArray = Array.from(files);
+
+                      console.log({ fileData });
+
+                      var config = {
+                        Entity: "Deals",
+                        APIData: {
+                          id: deal?.id,
+                          Versicherung: "Sparkassenversicherung",
+                          Leadquelle: "Expira",
+                          Schadentag: fileData?.top?.Schadentag,
+                          Schadennummer: fileData?.top?.Schadennummer,
+                          Schadenort: fileData?.top?.Schadenort,
+                          Termin_Info: fileData?.bottom?.Termin_Info,
+                          Schadenart: "GB Leitungswasser",
+                        },
+                        Trigger: ["workflow"],
+                      };
+                      const record_update_resp =
+                        await ZOHO.CRM.API.updateRecord(config);
+
+                      console.log({ record_update_resp });
+
+                      // collect promises
+                      const uploadPromises = filesArray.map((file, index) => {
+                        return ZOHO.CRM.API.attachFile({
+                          Entity: "Deals",
+                          RecordID: deal.id,
+                          File: {
+                            Name: file.name,
+                            Content: file,
+                          },
+                        }).then((res) => {
+                          console.log("Uploaded:", res);
+                          return res; // keep the result
+                        });
+                      });
+
+                      // wait for all to finish
+                      const results = await Promise.all(uploadPromises);
+
+                      console.log("All uploads done", results);
+
+                      // take decision after everything is uploaded
+                      if (results.every((r) => r.data[0].code === "SUCCESS")) {
+                        console.log("All files uploaded successfully!");
+                        const updatedFileNames = Object.keys(
+                          allFilesData
+                        ).filter((name) => name !== fileName);
+                        setSelectedDeals((prev) => {
+                          const updatedData = {};
+                          updatedFileNames.forEach((name) => {
+                            updatedData[name] = selectedDeals[name];
+                          });
+                          return updatedData;
+                        });
+                        setSelectedFiles((prev) => {
+                          const updatedData = {};
+                          updatedFileNames.forEach((name) => {
+                            updatedData[name] = selectedFiles[name];
+                          });
+                          return updatedData;
+                        });
+
+                        setAllFilesData((prev) => {
+                          const updatedData = {};
+                          updatedFileNames.forEach((name) => {
+                            updatedData[name] = allFilesData[name];
+                          });
+                          return updatedData;
+                        });
+
+                        // your next decision here
+                      } else {
+                        console.log("Some uploads failed", results);
+                      }
                     }}
                   >
+                    <Typography component="span" sx={{ width: "200px" }}>
+                      {fileName}
+                    </Typography>
                     <div
                       style={{
-                        width: "450px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        flex: 1,
                       }}
                     >
-                      <Autocomplete
-                        disablePortal
-                        id="combo-box-demo"
-                        onOpen={() => {
-                          const data = {};
-                          deals.forEach((option) => {
-                            data[option.id] = option;
-                          });
+                      <div
+                        style={{
+                          width: "450px",
+                        }}
+                      >
+                        <Autocomplete
+                          disablePortal
+                          id="combo-box-demo"
+                          onOpen={() => {
+                            const data = {};
+                            deals.forEach((option) => {
+                              data[option.id] = option;
+                            });
 
-                          setDeals(Object.values(data));
-                        }}
-                        options={deals}
-                        getOptionLabel={(option) => option?.Full_Name}
-                        getOptionKey={(option) => option.id}
-                        sx={{
-                          width: "100%",
-                        }}
-                        size={"small"}
-                        value={
-                          selectedDeals[fileName]
-                            ? {
-                                Full_Name:
-                                  selectedDeals?.[fileName]?.name || "",
-                                id: selectedDeals?.[fileName]?.id || "",
-                              }
-                            : null
-                        }
-                        onChange={(event, value) => {
-                          console.log({ value, id: value?.id });
-                          setSelectedDeals((prev) => ({
+                            setDeals(Object.values(data));
+                          }}
+                          options={deals}
+                          getOptionLabel={(option) => option?.Deal_Name}
+                          getOptionKey={(option) => option.id}
+                          sx={{
+                            width: "100%",
+                          }}
+                          size={"small"}
+                          value={
+                            selectedDeals[fileName]
+                              ? {
+                                  Deal_Name:
+                                    selectedDeals?.[fileName]?.name || "",
+                                  id: selectedDeals?.[fileName]?.id || "",
+                                }
+                              : null
+                          }
+                          onChange={(event, value) => {
+                            console.log({ value, id: value?.id });
+                            setSelectedDeals((prev) => ({
+                              ...prev,
+                              [fileName]: {
+                                name: value?.Deal_Name,
+                                id: value?.id,
+                              },
+                            }));
+                            // setValue(
+                            //   {
+                            //     name: value?.Full_Name,
+                            //     id: value?.id,
+                            //   } || ""
+                            // );
+                          }}
+                          loading={loading}
+                          loadingText={"Loading..."}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              required
+                              sx={{ width: "100%" }}
+                              placeholder="Select Deal Name"
+                              onChange={async (e) => {
+                                if (e?.target?.value?.length >= 3) {
+                                  setSearchValue((prev) => e?.target?.value);
+                                }
+                              }}
+                              // error={!!error}
+                              // helperText={error && error.message}
+                            />
+                          )}
+                        />
+                      </div>
+
+                      <input
+                        type="file"
+                        multiple
+                        onChange={(e) => {
+                          console.log(e.target.files);
+                          setSelectedFiles((prev) => ({
                             ...prev,
-                            [fileName]: {
-                              name: value?.Full_Name,
-                              id: value?.id,
-                            },
+                            [fileName]: e.target.files,
                           }));
-                          // setValue(
-                          //   {
-                          //     name: value?.Full_Name,
-                          //     id: value?.id,
-                          //   } || ""
-                          // );
+                          // const name = e.target.files[0].name;
+
+                          // ZOHO.CRM.API.attachFile({
+                          //   Entity: "Deals",
+                          //   RecordID: "4731441000014144866",
+                          //   File: {
+                          //     Name: name,
+                          //     Content: e.target.files[0],
+                          //   },
+                          // }).then(function (data) {
+                          //   console.log(data);
+                          // });
                         }}
-                        loading={loading}
-                        loadingText={"Loading..."}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            required
-                            sx={{ width: "100%" }}
-                            placeholder="Select Contact Name"
-                            onChange={async (e) => {
-                              if (e?.target?.value?.length >= 3) {
-                                setSearchValue((prev) => e?.target?.value);
-                              }
-                            }}
-                            // error={!!error}
-                            // helperText={error && error.message}
-                          />
-                        )}
                       />
+
+                      <Button type="submit" variant="contained" size="small">
+                        Proceed
+                      </Button>
                     </div>
-                    <input
-                      type="file"
-                      multiple
-                      onChange={(e) => {
-                        console.log(e.target.files);
-                        setSelectedFiles((prev) => ({
-                          ...prev,
-                          [fileName]: e.target.files,
-                        }));
-                        // const name = e.target.files[0].name;
-
-                        // ZOHO.CRM.API.attachFile({
-                        //   Entity: "Deals",
-                        //   RecordID: "4731441000014144866",
-                        //   File: {
-                        //     Name: name,
-                        //     Content: e.target.files[0],
-                        //   },
-                        // }).then(function (data) {
-                        //   console.log(data);
-                        // });
-                      }}
-                    />
-
-                    <Button type="submit" variant="contained" size="small">
-                      Proceed
-                    </Button>
-                  </div>
-                </form>
-              </AccordionSummary>
-              <AccordionDetails>
-                {/* {JSON.stringify(allFilesData[fileName])} */}
-                <TableContainer component={Paper}>
-                  <Table
-                    sx={{ minWidth: 650 }}
-                    size="small"
-                    aria-label="simple table"
-                  >
-                    <TableHead sx={{ background: "#b5b5b5" }}>
-                      <TableRow>
+                  </form>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {/* {JSON.stringify(allFilesData[fileName])} */}
+                  <TableContainer component={Paper}>
+                    <Table
+                      sx={{ minWidth: 650 }}
+                      size="small"
+                      aria-label="simple table"
+                    >
+                      <TableHead sx={{ background: "#b5b5b5" }}>
+                        <TableRow>
+                          {Object.keys(allFilesData[fileName].top).map(
+                            (tableCell) => (
+                              <TableCell>{tableCell}</TableCell>
+                            )
+                          )}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {Object.keys(allFilesData[fileName].top).map(
                           (tableCell) => (
-                            <TableCell>{tableCell}</TableCell>
+                            <TableCell>
+                              {allFilesData[fileName].top[tableCell]}
+                            </TableCell>
                           )
                         )}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(allFilesData[fileName].top).map(
-                        (tableCell) => (
-                          <TableCell>
-                            {allFilesData[fileName].top[tableCell]}
-                          </TableCell>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <h4>Versicherungsnehmer</h4>
-                <TableContainer component={Paper}>
-                  <Table
-                    size="small"
-                    sx={{ minWidth: 650 }}
-                    aria-label="simple table"
-                  >
-                    <TableHead sx={{ background: "#b5b5b5" }}>
-                      <TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <h4>Versicherungsnehmer</h4>
+                  <TableContainer component={Paper}>
+                    <Table
+                      size="small"
+                      sx={{ minWidth: 650 }}
+                      aria-label="simple table"
+                    >
+                      <TableHead sx={{ background: "#b5b5b5" }}>
+                        <TableRow>
+                          {Object.keys(allFilesData[fileName].middle).map(
+                            (tableCell) => (
+                              <TableCell>{tableCell}</TableCell>
+                            )
+                          )}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {Object.keys(allFilesData[fileName].middle).map(
                           (tableCell) => (
-                            <TableCell>{tableCell}</TableCell>
+                            <TableCell>
+                              {allFilesData[fileName].middle[tableCell]}
+                            </TableCell>
                           )
                         )}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(allFilesData[fileName].middle).map(
-                        (tableCell) => (
-                          <TableCell>
-                            {allFilesData[fileName].middle[tableCell]}
-                          </TableCell>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <h4>Table</h4>
-                <TableContainer component={Paper}>
-                  <Table
-                    size="small"
-                    sx={{ minWidth: 650 }}
-                    aria-label="simple table"
-                  >
-                    <TableHead sx={{ background: "#b5b5b5" }}>
-                      <TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <h4>Table</h4>
+                  <TableContainer component={Paper}>
+                    <Table
+                      size="small"
+                      sx={{ minWidth: 650 }}
+                      aria-label="simple table"
+                    >
+                      <TableHead sx={{ background: "#b5b5b5" }}>
+                        <TableRow>
+                          {Object.keys(allFilesData[fileName].table).map(
+                            (tableCell) => (
+                              <TableCell>{tableCell}</TableCell>
+                            )
+                          )}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {Object.keys(allFilesData[fileName].table).map(
                           (tableCell) => (
-                            <TableCell>{tableCell}</TableCell>
+                            <TableCell>
+                              {(() => {
+                                const obj =
+                                  allFilesData[fileName].table[tableCell];
+                                // return JSON.stringify(obj);
+                                return (
+                                  <>
+                                    {Object.keys(obj).map((key) => {
+                                      return (
+                                        <div>
+                                          {key}
+                                          {obj[key]}
+                                        </div>
+                                      );
+                                    })}
+                                  </>
+                                );
+                              })()}
+                            </TableCell>
                           )
                         )}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(allFilesData[fileName].table).map(
-                        (tableCell) => (
-                          <TableCell>
-                            {(() => {
-                              const obj =
-                                allFilesData[fileName].table[tableCell];
-                              // return JSON.stringify(obj);
-                              return (
-                                <>
-                                  {Object.keys(obj).map((key) => {
-                                    return (
-                                      <div>
-                                        {key}
-                                        {obj[key]}
-                                      </div>
-                                    );
-                                  })}
-                                </>
-                              );
-                            })()}
-                          </TableCell>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <h4>Vertragsdaten</h4>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <h4>Vertragsdaten</h4>
 
-                <TableContainer component={Paper}>
-                  <Table
-                    size="small"
-                    sx={{ minWidth: 650 }}
-                    aria-label="simple table"
-                  >
-                    <TableHead sx={{ background: "#b5b5b5" }}>
-                      <TableRow>
+                  <TableContainer component={Paper}>
+                    <Table
+                      size="small"
+                      sx={{ minWidth: 650 }}
+                      aria-label="simple table"
+                    >
+                      <TableHead sx={{ background: "#b5b5b5" }}>
+                        <TableRow>
+                          {Object.keys(allFilesData[fileName].bottom).map(
+                            (tableCell) => (
+                              <TableCell>{tableCell}</TableCell>
+                            )
+                          )}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {Object.keys(allFilesData[fileName].bottom).map(
                           (tableCell) => (
-                            <TableCell>{tableCell}</TableCell>
+                            <TableCell>
+                              {allFilesData[fileName].bottom[tableCell]}
+                            </TableCell>
                           )
                         )}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.keys(allFilesData[fileName].bottom).map(
-                        (tableCell) => (
-                          <TableCell>
-                            {allFilesData[fileName].bottom[tableCell]}
-                          </TableCell>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </AccordionDetails>
-            </Accordion>
-          ))}
-        </div>
-      )}
-    </div>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </AccordionDetails>
+              </Accordion>
+            ))}
+          </div>
+        )}
+      </Box>
+    </Box>
   );
 }
