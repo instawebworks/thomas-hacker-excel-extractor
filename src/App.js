@@ -616,10 +616,9 @@ export default function ExcelToJson() {
                         },
                         Trigger: ["workflow"],
                       };
-                      const record_update_resp =
-                        await ZOHO.CRM.API.updateRecord(config);
+                      await ZOHO.CRM.API.updateRecord(config);
 
-                      console.log({ record_update_resp });
+                      // console.log({ record_update_resp });
 
                       // collect promises
                       const uploadPromises = filesArray.map((file, index) => {
@@ -643,6 +642,16 @@ export default function ExcelToJson() {
 
                       // take decision after everything is uploaded
                       if (results.every((r) => r.data[0].code === "SUCCESS")) {
+                        ///////////////////// upload all the attachments to workdrive and delete from zoho crm attachments section /////////////
+                        //  deal_id
+                        var func_name = "upload_to_workdrive_delete_from_rec";
+                        var req_data = {
+                          arguments: JSON.stringify({
+                            deal_id: deal.id,
+                          }),
+                        };
+                        await ZOHO.CRM.FUNCTIONS.execute(func_name, req_data);
+                        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                         console.log("All files uploaded successfully!");
                         const updatedFileNames = Object.keys(
                           allFilesData
