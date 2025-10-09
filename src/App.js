@@ -195,9 +195,7 @@ export default function ExcelToJson() {
             Query:
               "((Deal_Name:starts_with:" +
               encodeURI("*" + search + "*") +
-              ")and(Stage:equals:" +
-              encodeURI("Auftrag Erstellt") +
-              "))",
+              ")and(Stage:equals:Auftrag Erstellt))",
             // Query: "(Email:Contains:" + Number(search) + ")",
             per_page: per_page,
             page: page,
@@ -282,9 +280,7 @@ export default function ExcelToJson() {
               Query:
                 "((Deal_Name:starts_with:" +
                 encodeURI("*" + search + "*") +
-                ")and(Stage:equals:" +
-                encodeURI("Auftrag Erstellt") +
-                "))",
+                ")and(Stage:equals:Auftrag Erstellt))",
               per_page: per_page,
               sort_order: "asc",
               page: page,
@@ -372,14 +368,17 @@ export default function ExcelToJson() {
       console.log("PageLoad", entityData);
       setEntityInfo(entityData);
 
-      const dealFields = await ZOHO.CRM.API.getAllRecords({
+      // encodeURI("Auftrag Erstellt")
+      let dealsResp = await ZOHO.CRM.API.searchRecord({
         Entity: "Deals",
-        sort_order: "asc",
+        Type: "criteria",
+        Query: "(Stage:equals:Auftrag Erstellt)",
         per_page: 200,
         page: 1,
+        sort_order: "asc",
       });
-      console.log("deals fields", dealFields.data);
-      setDeals(dealFields.data);
+      // console.log("deals fields", dealsResp);
+      setDeals(dealsResp.data);
 
       setInitialLoading(false);
       ZOHO.CRM.UI.Resize({ height: "1200", width: "1500" }).then(function (
