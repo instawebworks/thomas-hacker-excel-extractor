@@ -193,7 +193,11 @@ export default function ExcelToJson() {
             Entity: "Deals",
             Type: "criteria",
             Query:
-              "(Deal_Name:starts_with:" + encodeURI("*" + search + "*") + ")",
+              "((Deal_Name:starts_with:" +
+              encodeURI("*" + search + "*") +
+              ")and(Stage:equals:" +
+              encodeURI("Auftrag Erstellt") +
+              "))",
             // Query: "(Email:Contains:" + Number(search) + ")",
             per_page: per_page,
             page: page,
@@ -276,7 +280,11 @@ export default function ExcelToJson() {
               Entity: "Deals",
               Type: "criteria",
               Query:
-                "(Deal_Name:starts_with:" + encodeURI("*" + search + "*") + ")",
+                "((Deal_Name:starts_with:" +
+                encodeURI("*" + search + "*") +
+                ")and(Stage:equals:" +
+                encodeURI("Auftrag Erstellt") +
+                "))",
               per_page: per_page,
               sort_order: "asc",
               page: page,
