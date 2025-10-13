@@ -538,6 +538,15 @@ export default function ExcelToJson() {
     });
   };
 
+  function convertToISO(dateStr) {
+    const [month, day, year] = dateStr.split("/");
+
+    // Always assume 2-digit years are 2000+
+    const fullYear = year.length === 2 ? `20${year.padStart(2, "0")}` : year;
+
+    return `${fullYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+
   return (
     <Box sx={{ width: "100%" }}>
       <Box sx={{ width: "96%", mx: "auto" }}>
@@ -607,7 +616,77 @@ export default function ExcelToJson() {
                       const fileData = allFilesData[fileName];
                       const filesArray = Array.from(files);
 
-                      console.log({ fileData });
+                      // console.log({ fileData });
+                      const emailForContact = fileData?.middle?.["E-Mail:"];
+                      let contactId = "";
+                      let contactIdADAgentur = "";
+                      if (
+                        emailForContact !== "" &&
+                        emailForContact !== null &&
+                        emailForContact !== undefined
+                      ) {
+                        const contactSearchResp =
+                          await ZOHO.CRM.API.searchRecord({
+                            Entity: "Contacts",
+                            Type: "email",
+                            Query: emailForContact,
+                          });
+                        contactId = contactSearchResp?.data?.[0]?.id;
+                      }
+
+                      let emailForContactADAgentur =
+                        fileData?.table?.["Betreuer-Daten (AD / Makler)"]?.[
+                          "E-Mail:"
+                        ];
+                      if (emailForContactADAgentur === emailForContact) {
+                        contactIdADAgentur = contactId;
+                      } else {
+                        if (
+                          emailForContactADAgentur !== "" &&
+                          emailForContactADAgentur !== null &&
+                          emailForContactADAgentur !== undefined
+                        ) {
+                          const contactADAgenturResp =
+                            await ZOHO.CRM.API.searchRecord({
+                              Entity: "Contacts",
+                              Type: "email",
+                              Query: emailForContactADAgentur,
+                            });
+                          contactIdADAgentur =
+                            contactADAgenturResp?.data?.[0]?.id;
+                        }
+                      }
+
+                      let emailForContactSanierungspartner =
+                        fileData?.top?.["Emailadresse:"];
+
+                      let contactIdSanierungspartner = "";
+
+                      if (
+                        emailForContactSanierungspartner === emailForContact
+                      ) {
+                        contactIdSanierungspartner = contactId;
+                      } else if (
+                        emailForContactSanierungspartner ===
+                        emailForContactADAgentur
+                      ) {
+                        contactIdSanierungspartner = contactIdADAgentur;
+                      } else {
+                        if (
+                          emailForContactSanierungspartner !== "" &&
+                          emailForContactSanierungspartner !== null &&
+                          emailForContactSanierungspartner !== undefined
+                        ) {
+                          const contactSanierungspartnerResp =
+                            await ZOHO.CRM.API.searchRecord({
+                              Entity: "Contacts",
+                              Type: "email",
+                              Query: emailForContactADAgentur,
+                            });
+                          contactIdSanierungspartner =
+                            contactSanierungspartnerResp?.data?.[0]?.id;
+                        }
+                      }
 
                       var config = {
                         Entity: "Deals",
@@ -615,17 +694,22 @@ export default function ExcelToJson() {
                           id: deal?.id,
                           Versicherung: "Sparkassenversicherung",
                           Leadquelle: "Expira",
-                          Schadentag: fileData?.top?.Schadentag,
-                          Schadennummer: fileData?.top?.Schadennummer,
-                          Schadenort: fileData?.top?.Schadenort,
+                          Schadentag: convertToISO(
+                            fileData?.top?.["Schadentag: "]
+                          ),
+                          Schadennummer: fileData?.top?.["Schadennummer:"],
+                          Schadenort: fileData?.top?.["Schadenort:"],
                           Termin_Info: fileData?.bottom?.Termin_Info,
                           Schadenart: "GB Leitungswasser",
+                          Versicherungsnehmer: { id: contactId },
+                          AD_Agentur: { id: contactIdADAgentur },
+                          Sanierungspartner: { id: contactIdSanierungspartner },
+                          Schadenursache: fileData?.top?.["Ursache: "],
                         },
                         Trigger: ["workflow"],
                       };
                       await ZOHO.CRM.API.updateRecord(config);
-
-                      // console.log({ record_update_resp });
+                      console.log(config);
 
                       // collect promises
                       const uploadPromises = filesArray.map((file, index) => {
