@@ -631,6 +631,7 @@ export default function ExcelToJson() {
                             Type: "email",
                             Query: emailForContact,
                           });
+                        console.log(contactSearchResp);
                         contactId = contactSearchResp?.data?.[0]?.id;
                       }
 
@@ -701,9 +702,15 @@ export default function ExcelToJson() {
                           Schadenort: fileData?.top?.["Schadenort:"],
                           Termin_Info: fileData?.bottom?.Termin_Info,
                           Schadenart: "GB Leitungswasser",
-                          Versicherungsnehmer: { id: contactId },
-                          AD_Agentur: { id: contactIdADAgentur },
-                          Sanierungspartner: { id: contactIdSanierungspartner },
+                          Versicherungsnehmer: contactId
+                            ? { id: contactId }
+                            : {},
+                          AD_Agentur: contactIdADAgentur
+                            ? { id: contactIdADAgentur }
+                            : {},
+                          Sanierungspartner: contactIdSanierungspartner
+                            ? { id: contactIdSanierungspartner }
+                            : contactIdSanierungspartner,
                           Schadenursache: fileData?.top?.["Ursache: "],
                         },
                         Trigger: ["workflow"],
