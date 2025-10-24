@@ -694,7 +694,6 @@ export default function ExcelToJson() {
                         APIData: {
                           id: deal?.id,
                           Versicherung: "Sparkassenversicherung",
-                          Leadquelle: "Expira",
                           Schadentag: convertToISO(
                             fileData?.top?.["Schadentag: "]
                           ),
@@ -717,6 +716,58 @@ export default function ExcelToJson() {
                       };
                       await ZOHO.CRM.API.updateRecord(config);
                       console.log(config);
+
+                      // add note
+                      const newLine = String.fromCharCode(0x0a);
+
+                      const addNoteResp = await ZOHO.CRM.API.addNotes({
+                        Entity: "Deals",
+                        RecordID: deal?.id,
+                        Title: "Vertragsdaten Data",
+                        Content:
+                          "Vertragsnummer: " +
+                          fileData?.bottom?.["Vertragsnummer:"] +
+                          newLine +
+                          "Versicherte Sache / Risiko: " +
+                          fileData?.bottom?.["Versicherte Sache / Risiko:"] +
+                          newLine +
+                          "Versicherungsbedingungen: " +
+                          fileData?.bottom?.["Versicherungsbedingungen:"] +
+                          newLine +
+                          "Reserve: " +
+                          fileData?.bottom?.["Reserve:"] +
+                          newLine +
+                          "Versicherungssumme: " +
+                          fileData?.bottom?.["Versicherungssumme:"] +
+                          newLine +
+                          "Euro: " +
+                          fileData?.bottom?.["Euro:"] +
+                          newLine +
+                          "Baujahr: " +
+                          fileData?.bottom?.["Baujahr:"] +
+                          newLine +
+                          "Wohnfläche: " +
+                          fileData?.bottom?.["Wohnfläche:"] +
+                          newLine +
+                          "Staffelentschädigung: " +
+                          fileData?.bottom?.["Staffelentschädigung:"] +
+                          newLine +
+                          "letzte Schätzung: " +
+                          fileData?.bottom?.["letzte Schätzung:"] +
+                          newLine +
+                          "Selbstbehalt: " +
+                          fileData?.bottom?.["Selbstbehalt:"] +
+                          newLine +
+                          "Weitere wichtige Informationen zum Vertrag / Schaden: " +
+                          fileData?.bottom?.[
+                            "Weitere wichtige Informationen zum Vertrag / Schaden:"
+                          ] +
+                          newLine +
+                          "Termin_Info: " +
+                          fileData?.bottom?.["Termin_Info"],
+                      });
+
+                      console.log(addNoteResp);
 
                       // collect promises
                       const uploadPromises = filesArray.map((file, index) => {
