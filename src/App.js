@@ -617,6 +617,7 @@ export default function ExcelToJson() {
                       const filesArray = Array.from(files);
 
                       // console.log({ fileData });
+                      // first contact => Versicherungsnehmer
                       const emailForContact = fileData?.middle?.["E-Mail:"];
                       let contactId = "";
                       let contactIdADAgentur = "";
@@ -633,8 +634,50 @@ export default function ExcelToJson() {
                           });
                         console.log(contactSearchResp);
                         contactId = contactSearchResp?.data?.[0]?.id;
+
+                        if (
+                          contactId === null ||
+                          contactId === undefined ||
+                          contactId === ""
+                        ) {
+                          // search with name this time
+                          const contactSearchResp =
+                            await ZOHO.CRM.API.searchRecord({
+                              Entity: "Contacts",
+                              Type: "criteria",
+                              Query:
+                                "(Full_Name:equals:" +
+                                fileData?.middle?.["Name:"] +
+                                ")",
+                            });
+                          contactId = contactSearchResp?.data?.[0]?.id;
+
+                          // not found, create anyway
+                          if (
+                            contactId === null ||
+                            contactId === undefined ||
+                            contactId === ""
+                          ) {
+                            const contactCreateResp =
+                              await ZOHO.CRM.API.insertRecord({
+                                Entity: "Contacts",
+                                APIData: {
+                                  Email: emailForContact,
+                                  Last_Name: fileData?.middle?.["Name:"],
+                                  Mobile:
+                                    fileData?.middle?.["Bestmöglich"] ||
+                                    fileData?.middle?.["Handy:"] ||
+                                    fileData?.middle?.["Telefon: (Geschäft)"],
+                                },
+                                Trigger: ["workflow"],
+                              });
+                            contactId =
+                              contactCreateResp?.data?.[0]?.id?.details?.id;
+                          }
+                        }
                       }
 
+                      // second contact => AD_Agentur
                       let emailForContactADAgentur =
                         fileData?.table?.["Betreuer-Daten (AD / Makler)"]?.[
                           "E-Mail:"
@@ -655,9 +698,60 @@ export default function ExcelToJson() {
                             });
                           contactIdADAgentur =
                             contactADAgenturResp?.data?.[0]?.id;
+
+                          if (
+                            contactIdADAgentur !== "" &&
+                            contactIdADAgentur !== null &&
+                            contactIdADAgentur !== undefined
+                          ) {
+                            // search with name this time
+                            const contactSearchResp =
+                              await ZOHO.CRM.API.searchRecord({
+                                Entity: "Contacts",
+                                Type: "criteria",
+                                Query:
+                                  "(Full_Name:equals:" +
+                                  fileData?.table?.[
+                                    "Betreuer-Daten (AD / Makler)"
+                                  ]?.["Name:"] +
+                                  ")",
+                              });
+                            contactIdADAgentur =
+                              contactSearchResp?.data?.[0]?.id;
+
+                            // not found, create anyway
+                            if (
+                              contactIdADAgentur === null ||
+                              contactIdADAgentur === undefined ||
+                              contactIdADAgentur === ""
+                            ) {
+                              const contactCreateResp =
+                                await ZOHO.CRM.API.insertRecord({
+                                  Entity: "Contacts",
+                                  APIData: {
+                                    Email: emailForContactADAgentur,
+                                    Last_Name:
+                                      fileData?.table?.[
+                                        "Betreuer-Daten (AD / Makler)"
+                                      ]?.["Name:"],
+                                    Mobile:
+                                      fileData?.table?.[
+                                        "Betreuer-Daten (AD / Makler)"
+                                      ]?.["Telefon:"] ||
+                                      fileData?.table?.[
+                                        "Betreuer-Daten (AD / Makler)"
+                                      ]?.["Handy:"],
+                                  },
+                                  Trigger: ["workflow"],
+                                });
+                              contactIdADAgentur =
+                                contactCreateResp?.data?.[0]?.id?.details?.id;
+                            }
+                          }
                         }
                       }
 
+                      // third contact => Sanierungspartner
                       let emailForContactSanierungspartner =
                         fileData?.top?.["Emailadresse:"];
 
@@ -686,6 +780,48 @@ export default function ExcelToJson() {
                             });
                           contactIdSanierungspartner =
                             contactSanierungspartnerResp?.data?.[0]?.id;
+
+                          if (
+                            contactIdSanierungspartner === null ||
+                            contactIdSanierungspartner === undefined ||
+                            contactIdSanierungspartner === ""
+                          ) {
+                            // search with name this time
+                            const contactSearchResp =
+                              await ZOHO.CRM.API.searchRecord({
+                                Entity: "Contacts",
+                                Type: "criteria",
+                                Query:
+                                  "(Full_Name:equals:" +
+                                  fileData?.top?.[
+                                    "Bereits beauftragte Partnerfirma: "
+                                  ] +
+                                  ")",
+                              });
+                            contactIdSanierungspartner =
+                              contactSearchResp?.data?.[0]?.id;
+
+                            if (
+                              contactIdSanierungspartner === null ||
+                              contactIdSanierungspartner === undefined ||
+                              contactIdSanierungspartner === ""
+                            ) {
+                              const contactCreateResp =
+                                await ZOHO.CRM.API.insertRecord({
+                                  Entity: "Contacts",
+                                  APIData: {
+                                    Email: emailForContactSanierungspartner,
+                                    Last_Name:
+                                      fileData?.top?.[
+                                        "Bereits beauftragte Partnerfirma: "
+                                      ],
+                                  },
+                                  Trigger: ["workflow"],
+                                });
+                              contactIdSanierungspartner =
+                                contactCreateResp?.data?.[0]?.id?.details?.id;
+                            }
+                          }
                         }
                       }
 
