@@ -632,7 +632,6 @@ export default function ExcelToJson() {
                             Type: "email",
                             Query: emailForContact,
                           });
-                        console.log(contactSearchResp);
                         contactId = contactSearchResp?.data?.[0]?.id;
 
                         if (
@@ -672,7 +671,7 @@ export default function ExcelToJson() {
                                 Trigger: ["workflow"],
                               });
                             contactId =
-                              contactCreateResp?.data?.[0]?.id?.details?.id;
+                              contactCreateResp?.data?.[0]?.details?.id;
                           }
                         }
                       }
@@ -693,17 +692,21 @@ export default function ExcelToJson() {
                           const contactADAgenturResp =
                             await ZOHO.CRM.API.searchRecord({
                               Entity: "Contacts",
-                              Type: "email",
-                              Query: emailForContactADAgentur,
+                              Type: "criteria",
+                              Query:
+                                "(Email:equals:" +
+                                emailForContactADAgentur +
+                                ")",
                             });
                           contactIdADAgentur =
                             contactADAgenturResp?.data?.[0]?.id;
 
                           if (
-                            contactIdADAgentur !== "" &&
-                            contactIdADAgentur !== null &&
-                            contactIdADAgentur !== undefined
+                            contactIdADAgentur === "" ||
+                            contactIdADAgentur === null ||
+                            contactIdADAgentur === undefined
                           ) {
+                            console.log("first");
                             // search with name this time
                             const contactSearchResp =
                               await ZOHO.CRM.API.searchRecord({
@@ -745,7 +748,7 @@ export default function ExcelToJson() {
                                   Trigger: ["workflow"],
                                 });
                               contactIdADAgentur =
-                                contactCreateResp?.data?.[0]?.id?.details?.id;
+                                contactCreateResp?.data?.[0]?.details?.id;
                             }
                           }
                         }
@@ -754,7 +757,6 @@ export default function ExcelToJson() {
                       // third contact => Sanierungspartner
                       let emailForContactSanierungspartner =
                         fileData?.top?.["Emailadresse:"];
-
                       let contactIdSanierungspartner = "";
 
                       if (
@@ -776,7 +778,7 @@ export default function ExcelToJson() {
                             await ZOHO.CRM.API.searchRecord({
                               Entity: "Contacts",
                               Type: "email",
-                              Query: emailForContactADAgentur,
+                              Query: emailForContactSanierungspartner,
                             });
                           contactIdSanierungspartner =
                             contactSanierungspartnerResp?.data?.[0]?.id;
@@ -819,7 +821,7 @@ export default function ExcelToJson() {
                                   Trigger: ["workflow"],
                                 });
                               contactIdSanierungspartner =
-                                contactCreateResp?.data?.[0]?.id?.details?.id;
+                                contactCreateResp?.data?.[0]?.details?.id;
                             }
                           }
                         }
@@ -851,7 +853,6 @@ export default function ExcelToJson() {
                         Trigger: ["workflow"],
                       };
                       await ZOHO.CRM.API.updateRecord(config);
-                      console.log(config);
 
                       // add note
                       const newLine = String.fromCharCode(0x0a);
