@@ -633,47 +633,46 @@ export default function ExcelToJson() {
                             Query: emailForContact,
                           });
                         contactId = contactSearchResp?.data?.[0]?.id;
+                      }
 
-                        if (
-                          contactId === null ||
-                          contactId === undefined ||
-                          contactId === ""
-                        ) {
-                          // search with name this time
-                          const contactSearchResp =
-                            await ZOHO.CRM.API.searchRecord({
-                              Entity: "Contacts",
-                              Type: "criteria",
-                              Query:
-                                "(Full_Name:equals:" +
-                                fileData?.middle?.["Name:"] +
-                                ")",
-                            });
-                          contactId = contactSearchResp?.data?.[0]?.id;
+                      if (
+                        contactId === null ||
+                        contactId === undefined ||
+                        contactId === ""
+                      ) {
+                        // search with name this time
+                        const contactSearchResp =
+                          await ZOHO.CRM.API.searchRecord({
+                            Entity: "Contacts",
+                            Type: "criteria",
+                            Query:
+                              "(Full_Name:equals:" +
+                              fileData?.middle?.["Name:"] +
+                              ")",
+                          });
+                        contactId = contactSearchResp?.data?.[0]?.id;
+                      }
 
-                          // not found, create anyway
-                          if (
-                            contactId === null ||
-                            contactId === undefined ||
-                            contactId === ""
-                          ) {
-                            const contactCreateResp =
-                              await ZOHO.CRM.API.insertRecord({
-                                Entity: "Contacts",
-                                APIData: {
-                                  Email: emailForContact,
-                                  Last_Name: fileData?.middle?.["Name:"],
-                                  Mobile:
-                                    fileData?.middle?.["Bestmöglich"] ||
-                                    fileData?.middle?.["Handy:"] ||
-                                    fileData?.middle?.["Telefon: (Geschäft)"],
-                                },
-                                Trigger: ["workflow"],
-                              });
-                            contactId =
-                              contactCreateResp?.data?.[0]?.details?.id;
-                          }
-                        }
+                      // not found, create anyway
+                      if (
+                        contactId === null ||
+                        contactId === undefined ||
+                        contactId === ""
+                      ) {
+                        const contactCreateResp =
+                          await ZOHO.CRM.API.insertRecord({
+                            Entity: "Contacts",
+                            APIData: {
+                              Email: emailForContact,
+                              Last_Name: fileData?.middle?.["Name:"],
+                              Mobile:
+                                fileData?.middle?.["Bestmöglich"] ||
+                                fileData?.middle?.["Handy:"] ||
+                                fileData?.middle?.["Telefon: (Geschäft)"],
+                            },
+                            Trigger: ["workflow"],
+                          });
+                        contactId = contactCreateResp?.data?.[0]?.details?.id;
                       }
 
                       // second contact => AD_Agentur
@@ -700,14 +699,25 @@ export default function ExcelToJson() {
                             });
                           contactIdADAgentur =
                             contactADAgenturResp?.data?.[0]?.id;
+                        }
 
+                        if (
+                          contactIdADAgentur === "" ||
+                          contactIdADAgentur === null ||
+                          contactIdADAgentur === undefined
+                        ) {
+                          // search with name this time
                           if (
-                            contactIdADAgentur === "" ||
-                            contactIdADAgentur === null ||
-                            contactIdADAgentur === undefined
+                            fileData?.table?.["Betreuer-Daten (AD / Makler)"]?.[
+                              "Name:"
+                            ] !== "" &&
+                            fileData?.table?.["Betreuer-Daten (AD / Makler)"]?.[
+                              "Name:"
+                            ] !== null &&
+                            fileData?.table?.["Betreuer-Daten (AD / Makler)"]?.[
+                              "Name:"
+                            ] !== undefined
                           ) {
-                            console.log("first");
-                            // search with name this time
                             const contactSearchResp =
                               await ZOHO.CRM.API.searchRecord({
                                 Entity: "Contacts",
@@ -721,35 +731,47 @@ export default function ExcelToJson() {
                               });
                             contactIdADAgentur =
                               contactSearchResp?.data?.[0]?.id;
+                          }
+                        }
 
-                            // not found, create anyway
-                            if (
-                              contactIdADAgentur === null ||
-                              contactIdADAgentur === undefined ||
-                              contactIdADAgentur === ""
-                            ) {
-                              const contactCreateResp =
-                                await ZOHO.CRM.API.insertRecord({
-                                  Entity: "Contacts",
-                                  APIData: {
-                                    Email: emailForContactADAgentur,
-                                    Last_Name:
-                                      fileData?.table?.[
-                                        "Betreuer-Daten (AD / Makler)"
-                                      ]?.["Name:"],
-                                    Mobile:
-                                      fileData?.table?.[
-                                        "Betreuer-Daten (AD / Makler)"
-                                      ]?.["Telefon:"] ||
-                                      fileData?.table?.[
-                                        "Betreuer-Daten (AD / Makler)"
-                                      ]?.["Handy:"],
-                                  },
-                                  Trigger: ["workflow"],
-                                });
-                              contactIdADAgentur =
-                                contactCreateResp?.data?.[0]?.details?.id;
-                            }
+                        // not found, create anyway
+                        if (
+                          contactIdADAgentur === null ||
+                          contactIdADAgentur === undefined ||
+                          contactIdADAgentur === ""
+                        ) {
+                          if (
+                            fileData?.table?.["Betreuer-Daten (AD / Makler)"]?.[
+                              "Name:"
+                            ] !== "" &&
+                            fileData?.table?.["Betreuer-Daten (AD / Makler)"]?.[
+                              "Name:"
+                            ] !== null &&
+                            fileData?.table?.["Betreuer-Daten (AD / Makler)"]?.[
+                              "Name:"
+                            ] !== undefined
+                          ) {
+                            const contactCreateResp =
+                              await ZOHO.CRM.API.insertRecord({
+                                Entity: "Contacts",
+                                APIData: {
+                                  Email: emailForContactADAgentur,
+                                  Last_Name:
+                                    fileData?.table?.[
+                                      "Betreuer-Daten (AD / Makler)"
+                                    ]?.["Name:"],
+                                  Mobile:
+                                    fileData?.table?.[
+                                      "Betreuer-Daten (AD / Makler)"
+                                    ]?.["Telefon:"] ||
+                                    fileData?.table?.[
+                                      "Betreuer-Daten (AD / Makler)"
+                                    ]?.["Handy:"],
+                                },
+                                Trigger: ["workflow"],
+                              });
+                            contactIdADAgentur =
+                              contactCreateResp?.data?.[0]?.details?.id;
                           }
                         }
                       }
@@ -757,73 +779,90 @@ export default function ExcelToJson() {
                       // third contact => Sanierungspartner
                       let emailForContactSanierungspartner =
                         fileData?.top?.["Emailadresse:"];
+                      console.log({ emailForContactSanierungspartner });
                       let contactIdSanierungspartner = "";
 
                       if (
-                        emailForContactSanierungspartner === emailForContact
+                        emailForContactSanierungspartner !== "" &&
+                        emailForContactSanierungspartner !== null &&
+                        emailForContactSanierungspartner !== undefined
                       ) {
-                        contactIdSanierungspartner = contactId;
-                      } else if (
-                        emailForContactSanierungspartner ===
-                        emailForContactADAgentur
+                        const contactSanierungspartnerResp =
+                          await ZOHO.CRM.API.searchRecord({
+                            Entity: "Contacts",
+                            Type: "email",
+                            Query: emailForContactSanierungspartner,
+                          });
+                        console.log({ contactSanierungspartnerResp });
+                        contactIdSanierungspartner =
+                          contactSanierungspartnerResp?.data?.[0]?.id;
+                      }
+
+                      if (
+                        contactIdSanierungspartner === null ||
+                        contactIdSanierungspartner === undefined ||
+                        contactIdSanierungspartner === ""
                       ) {
-                        contactIdSanierungspartner = contactIdADAgentur;
-                      } else {
+                        // search with name this time
                         if (
-                          emailForContactSanierungspartner !== "" &&
-                          emailForContactSanierungspartner !== null &&
-                          emailForContactSanierungspartner !== undefined
+                          fileData?.top?.[
+                            "Bereits beauftragte Partnerfirma: "
+                          ] !== "" &&
+                          fileData?.top?.[
+                            "Bereits beauftragte Partnerfirma: "
+                          ] !== undefined &&
+                          fileData?.top?.[
+                            "Bereits beauftragte Partnerfirma: "
+                          ] !== null
                         ) {
-                          const contactSanierungspartnerResp =
+                          const contactSearchResp =
                             await ZOHO.CRM.API.searchRecord({
                               Entity: "Contacts",
-                              Type: "email",
-                              Query: emailForContactSanierungspartner,
+                              Type: "criteria",
+                              Query:
+                                "(Full_Name:equals:" +
+                                fileData?.top?.[
+                                  "Bereits beauftragte Partnerfirma: "
+                                ] +
+                                ")",
                             });
+                          console.log({ contactSearchResp });
                           contactIdSanierungspartner =
-                            contactSanierungspartnerResp?.data?.[0]?.id;
+                            contactSearchResp?.data?.[0]?.id;
+                        }
+                      }
 
-                          if (
-                            contactIdSanierungspartner === null ||
-                            contactIdSanierungspartner === undefined ||
-                            contactIdSanierungspartner === ""
-                          ) {
-                            // search with name this time
-                            const contactSearchResp =
-                              await ZOHO.CRM.API.searchRecord({
-                                Entity: "Contacts",
-                                Type: "criteria",
-                                Query:
-                                  "(Full_Name:equals:" +
+                      if (
+                        contactIdSanierungspartner === null ||
+                        contactIdSanierungspartner === undefined ||
+                        contactIdSanierungspartner === ""
+                      ) {
+                        if (
+                          fileData?.top?.[
+                            "Bereits beauftragte Partnerfirma: "
+                          ] !== "" &&
+                          fileData?.top?.[
+                            "Bereits beauftragte Partnerfirma: "
+                          ] !== undefined &&
+                          fileData?.top?.[
+                            "Bereits beauftragte Partnerfirma: "
+                          ] !== null
+                        ) {
+                          const contactCreateResp =
+                            await ZOHO.CRM.API.insertRecord({
+                              Entity: "Contacts",
+                              APIData: {
+                                Email: emailForContactSanierungspartner,
+                                Last_Name:
                                   fileData?.top?.[
                                     "Bereits beauftragte Partnerfirma: "
-                                  ] +
-                                  ")",
-                              });
-                            contactIdSanierungspartner =
-                              contactSearchResp?.data?.[0]?.id;
-
-                            if (
-                              contactIdSanierungspartner === null ||
-                              contactIdSanierungspartner === undefined ||
-                              contactIdSanierungspartner === ""
-                            ) {
-                              const contactCreateResp =
-                                await ZOHO.CRM.API.insertRecord({
-                                  Entity: "Contacts",
-                                  APIData: {
-                                    Email: emailForContactSanierungspartner,
-                                    Last_Name:
-                                      fileData?.top?.[
-                                        "Bereits beauftragte Partnerfirma: "
-                                      ],
-                                  },
-                                  Trigger: ["workflow"],
-                                });
-                              contactIdSanierungspartner =
-                                contactCreateResp?.data?.[0]?.details?.id;
-                            }
-                          }
+                                  ],
+                              },
+                              Trigger: ["workflow"],
+                            });
+                          console.log({ contactCreateResp });
+                          contactIdSanierungspartner =
+                            contactCreateResp?.data?.[0]?.details?.id;
                         }
                       }
 
