@@ -666,9 +666,18 @@ export default function ExcelToJson() {
                               Email: emailForContact,
                               Last_Name: fileData?.middle?.["Name:"],
                               Mobile:
-                                fileData?.middle?.["Bestmöglich"] ||
-                                fileData?.middle?.["Handy:"] ||
-                                fileData?.middle?.["Telefon: (Geschäft)"],
+                                fileData?.middle?.["Bestmöglich"].replace(
+                                  /\D/g,
+                                  ""
+                                ) ||
+                                fileData?.middle?.["Handy:"].replace(
+                                  /\D/g,
+                                  ""
+                                ) ||
+                                fileData?.middle?.[
+                                  "Telefon: (Geschäft)"
+                                ].replace(/\D/g, "") ||
+                                "",
                             },
                             Trigger: ["workflow"],
                           });
@@ -680,7 +689,10 @@ export default function ExcelToJson() {
                         fileData?.table?.["Betreuer-Daten (AD / Makler)"]?.[
                           "E-Mail:"
                         ];
-                      if (emailForContactADAgentur === emailForContact) {
+                      if (
+                        emailForContactADAgentur === emailForContact &&
+                        emailForContactADAgentur !== ""
+                      ) {
                         contactIdADAgentur = contactId;
                       } else {
                         if (
@@ -763,10 +775,17 @@ export default function ExcelToJson() {
                                   Mobile:
                                     fileData?.table?.[
                                       "Betreuer-Daten (AD / Makler)"
-                                    ]?.["Telefon:"] ||
-                                    fileData?.table?.[
-                                      "Betreuer-Daten (AD / Makler)"
-                                    ]?.["Handy:"],
+                                    ]?.["Telefon:"] !== ""
+                                      ? fileData?.table?.[
+                                          "Betreuer-Daten (AD / Makler)"
+                                        ]?.["Telefon:"]
+                                      : fileData?.table?.[
+                                          "Betreuer-Daten (AD / Makler)"
+                                        ]?.["Handy:"] !== ""
+                                      ? fileData?.table?.[
+                                          "Betreuer-Daten (AD / Makler)"
+                                        ]?.["Handy:"]
+                                      : "",
                                 },
                                 Trigger: ["workflow"],
                               });
@@ -871,9 +890,9 @@ export default function ExcelToJson() {
                         APIData: {
                           id: deal?.id,
                           Versicherung: "Sparkassenversicherung",
-                          Schadentag: convertToISO(
-                            fileData?.top?.["Schadentag: "]
-                          ),
+                          Schadentag: fileData?.top?.["Schadentag: "]
+                            ? convertToISO(fileData?.top?.["Schadentag: "])
+                            : "",
                           Schadennummer: fileData?.top?.["Schadennummer:"],
                           Schadenort: fileData?.top?.["Schadenort:"],
                           Termin_Info: fileData?.bottom?.Termin_Info,
