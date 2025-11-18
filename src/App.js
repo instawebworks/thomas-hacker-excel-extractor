@@ -912,7 +912,7 @@ export default function ExcelToJson() {
                       };
                       await ZOHO.CRM.API.updateRecord(config);
 
-                      // add note
+                      // add note /
                       const newLine = String.fromCharCode(0x0a);
 
                       const addNoteResp = await ZOHO.CRM.API.addNotes({
