@@ -160,6 +160,11 @@ export default function ExcelToJson() {
   const [selectedDeals, setSelectedDeals] = useState({});
   const [selectedFiles, setSelectedFiles] = useState([]);
 
+  const [entity, setEntity] = useState(null);
+  const [entityId, setEntityId] = useState(null);
+  const [view, setView] = useState("webtab");
+  const [deaData, setDealData] = useState(null);
+
   const debouncedSearchTerm = useDebouncedValue(searchValue, 500);
 
   const handlePreviousSearch = ({ search }) => {
@@ -368,6 +373,17 @@ export default function ExcelToJson() {
       console.log("PageLoad", entityData);
       setEntityInfo(entityData);
 
+      if (
+        entityData?.EntityId !== null &&
+        entityData?.EntityId !== undefined &&
+        entityData?.EntityId !== ""
+      ) {
+        // assume it's in the blueprint
+        setEntity(entityData?.Entity);
+        setEntityId(entityData?.EntityId);
+        setView("blueprint");
+      }
+
       // encodeURI("Auftrag Erstellt")
       let dealsResp = await ZOHO.CRM.API.searchRecord({
         Entity: "Deals",
@@ -379,6 +395,19 @@ export default function ExcelToJson() {
       });
       // console.log("deals fields", dealsResp);
       setDeals(dealsResp.data);
+
+      if (
+        entityData?.EntityId !== null &&
+        entityData?.EntityId !== undefined &&
+        entityData?.EntityId !== ""
+      ) {
+        const dealFetchResp = await ZOHO.CRM.API.getRecord({
+          Entity: "Deals",
+          approved: "both",
+          RecordID: entityData?.EntityId,
+        });
+        setDealData(dealFetchResp?.data?.[0]);
+      }
 
       setInitialLoading(false);
       ZOHO.CRM.UI.Resize({ height: "1200", width: "1500" }).then(function (
