@@ -454,6 +454,10 @@ export default function ExcelToJson() {
   //   setOptions(Object.values(data));
   // }, [deals]);
 
+  //  [fileName]: {
+  //                                 name: value?.Deal_Name,
+  //                                 id: value?.id,
+  //                               },
   const handleFileUpload = (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -641,9 +645,21 @@ export default function ExcelToJson() {
                       e.preventDefault();
                       e.stopPropagation();
                       const files = selectedFiles[fileName] || [];
-                      const deal = selectedDeals[fileName];
+                      const deal = selectedDeals[fileName] || {
+                        name: deaData.Deal_Name,
+                        id: deaData.id,
+                      };
                       const fileData = allFilesData[fileName];
                       const filesArray = Array.from(files);
+
+                      // return console.log({ files, deal, fileData, filesArray });
+                      // setSelectedDeals((prev) => ({
+                      //   ...prev,
+                      //   [fileName]: {
+                      //     name: deaData?.Deal_Name,
+                      //     id: deaData?.id,
+                      //   },
+                      // }));
 
                       // console.log({ fileData });
                       // first contact => Versicherungsnehmer
@@ -1071,9 +1087,82 @@ export default function ExcelToJson() {
                           width: "450px",
                         }}
                       >
-                        <Autocomplete
+                        {view === "blueprint" ? (
+                          <TextField
+                            disabled
+                            sx={{
+                              width: "100%",
+                            }}
+                            value={deaData?.Deal_Name}
+                          />
+                        ) : (
+                          <Autocomplete
+                            disablePortal
+                            id="combo-box-demo"
+                            // disabled={view === "blueprint"}
+                            onOpen={() => {
+                              const data = {};
+                              deals.forEach((option) => {
+                                data[option.id] = option;
+                              });
+
+                              setDeals(Object.values(data));
+                            }}
+                            options={deals}
+                            getOptionLabel={(option) => option?.Deal_Name}
+                            getOptionKey={(option) => option.id}
+                            sx={{
+                              width: "100%",
+                            }}
+                            size={"small"}
+                            value={
+                              selectedDeals[fileName]
+                                ? {
+                                    Deal_Name:
+                                      selectedDeals?.[fileName]?.name || "",
+                                    id: selectedDeals?.[fileName]?.id || "",
+                                  }
+                                : null
+                            }
+                            onChange={(event, value) => {
+                              console.log({ value, id: value?.id });
+                              setSelectedDeals((prev) => ({
+                                ...prev,
+                                [fileName]: {
+                                  name: value?.Deal_Name,
+                                  id: value?.id,
+                                },
+                              }));
+                              // setValue(
+                              //   {
+                              //     name: value?.Full_Name,
+                              //     id: value?.id,
+                              //   } || ""
+                              // );
+                            }}
+                            loading={loading}
+                            loadingText={"Loading..."}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                required
+                                sx={{ width: "100%" }}
+                                placeholder="Select Deal Name"
+                                onChange={async (e) => {
+                                  if (e?.target?.value?.length >= 3) {
+                                    setSearchValue((prev) => e?.target?.value);
+                                  }
+                                }}
+                                // error={!!error}
+                                // helperText={error && error.message}
+                              />
+                            )}
+                          />
+                        )}
+                        {/* <Autocomplete
                           disablePortal
                           id="combo-box-demo"
+                          // disabled={view === "blueprint"}
                           onOpen={() => {
                             const data = {};
                             deals.forEach((option) => {
@@ -1082,13 +1171,14 @@ export default function ExcelToJson() {
 
                             setDeals(Object.values(data));
                           }}
-                          options={deals}
+                          options={view === "blueprint" ? [deaData] : deals}
                           getOptionLabel={(option) => option?.Deal_Name}
                           getOptionKey={(option) => option.id}
                           sx={{
                             width: "100%",
                           }}
                           size={"small"}
+                          defaultValue={view === "blueprint" ? deals[2] : null}
                           value={
                             selectedDeals[fileName]
                               ? {
@@ -1131,7 +1221,7 @@ export default function ExcelToJson() {
                               // helperText={error && error.message}
                             />
                           )}
-                        />
+                        /> */}
                       </div>
 
                       <input
