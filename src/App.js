@@ -1042,6 +1042,10 @@ export default function ExcelToJson() {
                         await ZOHO.CRM.FUNCTIONS.execute(func_name, req_data);
                         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                         console.log("All files uploaded successfully!");
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        // blueprint proceed
+                        await ZOHO.CRM.BLUEPRINT.proceed();
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                         const updatedFileNames = Object.keys(
                           allFilesData
                         ).filter((name) => name !== fileName);
