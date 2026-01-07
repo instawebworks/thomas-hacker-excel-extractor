@@ -823,13 +823,13 @@ export default function ExcelToJson() {
                                     ]?.["Telefon:"] !== ""
                                       ? fileData?.table?.[
                                           "Betreuer-Daten (AD / Makler)"
-                                        ]?.["Telefon:"]
+                                        ]?.["Telefon:"].replace(/\D/g, "")
                                       : fileData?.table?.[
                                           "Betreuer-Daten (AD / Makler)"
                                         ]?.["Handy:"] !== ""
                                       ? fileData?.table?.[
                                           "Betreuer-Daten (AD / Makler)"
-                                        ]?.["Handy:"]
+                                        ]?.["Handy:"].replace(/\D/g, "")
                                       : "",
                                 },
                                 Trigger: ["workflow"],
