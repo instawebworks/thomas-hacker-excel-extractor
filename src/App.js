@@ -1105,7 +1105,7 @@ export default function ExcelToJson() {
                           <Autocomplete
                             disablePortal
                             id="combo-box-demo"
-                            // disabled={view === "blueprint"}
+                            // disabled={view === "blueprint"}=>
                             onOpen={() => {
                               const data = {};
                               deals.forEach((option) => {
